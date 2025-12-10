@@ -14,7 +14,7 @@ const adminProtect = async (req, res, next) => {
 
     try {
       // Fetch user from database to get the role
-      const user = await User.findById(req.user).select('role');
+      const user = await User.findById(req.user.id).select('role');
 
       if (!user) {
         return res.status(401).json({ message: 'User not found' });

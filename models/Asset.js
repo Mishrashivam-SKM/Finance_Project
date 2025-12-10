@@ -39,10 +39,9 @@ const assetSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Update lastUpdated before saving
-assetSchema.pre('save', function(next) {
+// Update lastUpdated before saving (Mongoose 9.x compatible)
+assetSchema.pre('save', function() {
   this.lastUpdated = new Date();
-  next();
 });
 
 const Asset = mongoose.model('Asset', assetSchema);
