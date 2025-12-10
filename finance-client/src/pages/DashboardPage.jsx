@@ -20,7 +20,14 @@ import {
   Card,
   CardHeader,
   CardBody,
-  Divider
+  Divider,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Icon,
+  Skeleton,
+  SkeletonText
 } from '@chakra-ui/react';
 import { AddIcon, CalendarIcon } from '@chakra-ui/icons';
 import { Link as RouterLink } from 'react-router-dom';
@@ -33,6 +40,8 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 const DashboardPage = () => {
   const [netWorthData, setNetWorthData] = useState(null);
   const [spendingData, setSpendingData] = useState(null);
+  const [savingTipData, setSavingTipData] = useState(null);
+  const [isTipLoading, setIsTipLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   const { token } = useAuth();
@@ -90,6 +99,34 @@ const DashboardPage = () => {
     fetchDashboardData();
   }, [token, toast]);
 
+  // Fetch AI saving tip separately (can take longer)
+  useEffect(() => {
+    const fetchSavingTip = async () => {
+      try {
+        const response = await fetch('/api/reports/saving-tips', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch saving tip');
+        }
+
+        const data = await response.json();
+        setSavingTipData(data);
+      } catch (error) {
+        console.error('Error fetching saving tip:', error.message);
+        // Don't show toast for tip error - it's not critical
+      } finally {
+        setIsTipLoading(false);
+      }
+    };
+
+    fetchSavingTip();
+  }, [token]);
+
   // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -125,6 +162,55 @@ const DashboardPage = () => {
       <Heading size="lg" mb={6}>
         Dashboard
       </Heading>
+
+      {/* AI Finance Coach Tip Widget */}
+      <Card bg={cardBg} border="1px" borderColor={borderColor} mb={6}>
+        <CardHeader pb={2}>
+          <HStack spacing={2}>
+            <Text fontSize="2xl">💡</Text>
+            <Heading size="md">AI Finance Coach Tip</Heading>
+          </HStack>
+        </CardHeader>
+        <CardBody pt={2}>
+          {isTipLoading ? (
+            <VStack align="stretch" spacing={3}>
+              <Skeleton height="20px" />
+              <SkeletonText noOfLines={2} spacing={2} />
+            </VStack>
+          ) : savingTipData?.aiTip ? (
+            <Alert
+              status="info"
+              variant="subtle"
+              flexDirection="column"
+              alignItems="flex-start"
+              borderRadius="md"
+              py={4}
+            >
+              <HStack mb={2}>
+                <Text fontSize="xl">🤖</Text>
+                <AlertTitle fontSize="md">Personalized Advice</AlertTitle>
+              </HStack>
+              <AlertDescription fontSize="md" lineHeight="tall">
+                {savingTipData.aiTip}
+              </AlertDescription>
+              {savingTipData.expenses?.highestCategory && (
+                <Text fontSize="sm" color={textColor} mt={3}>
+                  Based on your spending: Highest category is{' '}
+                  <strong>{savingTipData.expenses.highestCategory.name}</strong> at{' '}
+                  {formatCurrency(savingTipData.expenses.highestCategory.amount)}
+                </Text>
+              )}
+            </Alert>
+          ) : (
+            <Alert status="warning" borderRadius="md">
+              <AlertIcon />
+              <AlertDescription>
+                Add more transactions to get personalized saving tips from our AI coach.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardBody>
+      </Card>
 
       <Grid
         templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }}
