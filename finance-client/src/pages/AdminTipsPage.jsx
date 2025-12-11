@@ -84,34 +84,10 @@ const AdminTipsPage = () => {
   const textColor = useColorModeValue('gray.600', 'gray.400');
   const forbiddenBg = useColorModeValue('red.50', 'red.900');
 
-  // Check admin role
-  if (user?.role !== 'admin') {
-    return (
-      <Center h="60vh">
-        <VStack
-          spacing={6}
-          p={10}
-          bg={forbiddenBg}
-          borderRadius="xl"
-          border="1px"
-          borderColor="red.300"
-        >
-          <Icon as={WarningIcon} boxSize={16} color="red.500" />
-          <Heading size="2xl" color="red.500">
-            403 Forbidden
-          </Heading>
-          <Text fontSize="lg" color={textColor} textAlign="center">
-            You do not have permission to access this page.
-            <br />
-            Admin privileges are required.
-          </Text>
-        </VStack>
-      </Center>
-    );
-  }
-
-  // Fetch tips
+  // Fetch tips - moved before conditional return to follow rules of hooks
   useEffect(() => {
+    if (user?.role !== 'admin') return; // Skip fetching if not admin
+    
     const fetchTips = async () => {
       try {
         const response = await fetch('/api/admin/tips', {
@@ -138,7 +114,33 @@ const AdminTipsPage = () => {
     };
 
     fetchTips();
-  }, [token, toast]);
+  }, [token, toast, user?.role]);
+
+  // Check admin role
+  if (user?.role !== 'admin') {
+    return (
+      <Center h="60vh">
+        <VStack
+          spacing={6}
+          p={10}
+          bg={forbiddenBg}
+          borderRadius="xl"
+          border="1px"
+          borderColor="red.300"
+        >
+          <Icon as={WarningIcon} boxSize={16} color="red.500" />
+          <Heading size="2xl" color="red.500">
+            403 Forbidden
+          </Heading>
+          <Text fontSize="lg" color={textColor} textAlign="center">
+            You do not have permission to access this page.
+            <br />
+            Admin privileges are required.
+          </Text>
+        </VStack>
+      </Center>
+    );
+  }
 
   // Filter tips
   const filteredTips = tips.filter((tip) => {

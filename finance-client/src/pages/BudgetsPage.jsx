@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -48,10 +48,20 @@ import {
   Grid,
   GridItem,
   Progress,
-  Badge
+  Badge,
+  Drawer,
+  DrawerBody,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  Divider,
+  Stack
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAuth } from '../context/AuthContext';
+import useSocket from '../hooks/useSocket';
 
 const BudgetsPage = () => {
   const [budgets, setBudgets] = useState([]);
@@ -61,6 +71,11 @@ const BudgetsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  
+  // Transaction breakdown drawer state
+  const [selectedBudget, setSelectedBudget] = useState(null);
+  const [budgetTransactions, setBudgetTransactions] = useState([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,7 +84,8 @@ const BudgetsPage = () => {
   // Form states
   const [formData, setFormData] = useState({
     category: '',
-    periodStart: new Date().toISOString().slice(0, 7) + '-01',
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
     limitAmount: ''
   });
 
@@ -77,6 +93,7 @@ const BudgetsPage = () => {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const { isOpen: isDrawerOpen, onOpen: onDrawerOpen, onClose: onDrawerClose } = useDisclosure();
   const cancelRef = useRef();
 
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -86,51 +103,73 @@ const BudgetsPage = () => {
   const redColor = useColorModeValue('red.500', 'red.300');
   const orangeColor = useColorModeValue('orange.500', 'orange.300');
 
+  // Memoized function to fetch all data
+  const fetchData = useCallback(async () => {
+    try {
+      const [budgetsRes, categoriesRes, transactionsRes] = await Promise.all([
+        fetch('/api/budgets', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/categories', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/transactions', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (budgetsRes.ok) {
+        const budgetsData = await budgetsRes.json();
+        setBudgets(budgetsData);
+      }
+
+      if (categoriesRes.ok) {
+        const categoriesData = await categoriesRes.json();
+        setCategories(categoriesData.filter(cat => cat.type === 'expense'));
+      }
+
+      if (transactionsRes.ok) {
+        const transactionsData = await transactionsRes.json();
+        setTransactions(transactionsData);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error loading data',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, toast]);
+
+  // Socket.IO integration - listen for real-time updates
+  useSocket({
+    onBudgetUpdate: (data) => {
+      console.log('BudgetsPage received budget update:', data);
+      // Refresh budgets and transactions when budget is updated
+      fetchData();
+    },
+    onTransactionUpdate: (data) => {
+      console.log('BudgetsPage received transaction update:', data);
+      // Refresh all data to update spending amounts and budget status
+      fetchData();
+      toast({
+        title: 'Budgets Updated',
+        description: `Transaction ${data.action || 'changed'} - budget spending updated`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true
+      });
+    }
+  });
+
   // Fetch budgets, categories, and transactions
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [budgetsRes, categoriesRes, transactionsRes] = await Promise.all([
-          fetch('/api/budgets', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch('/api/categories', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch('/api/transactions', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
-        ]);
-
-        if (budgetsRes.ok) {
-          const budgetsData = await budgetsRes.json();
-          setBudgets(budgetsData);
-        }
-
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          setCategories(categoriesData.filter(cat => cat.type === 'expense'));
-        }
-
-        if (transactionsRes.ok) {
-          const transactionsData = await transactionsRes.json();
-          setTransactions(transactionsData);
-        }
-      } catch (error) {
-        toast({
-          title: 'Error loading data',
-          description: error.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
-  }, [token, toast]);
+  }, [fetchData]);
 
   // Calculate spending for a budget category in its period
   const getSpentAmount = (budget) => {
@@ -170,7 +209,8 @@ const BudgetsPage = () => {
   const resetForm = () => {
     setFormData({
       category: '',
-      periodStart: new Date().toISOString().slice(0, 7) + '-01',
+      month: new Date().getMonth() + 1,
+      year: new Date().getFullYear(),
       limitAmount: ''
     });
     setEditingBudget(null);
@@ -184,10 +224,12 @@ const BudgetsPage = () => {
 
   // Open modal for editing
   const handleEdit = (budget) => {
+    const periodDate = new Date(budget.periodStart);
     setEditingBudget(budget);
     setFormData({
       category: budget.category._id || budget.category,
-      periodStart: new Date(budget.periodStart).toISOString().split('T')[0],
+      month: periodDate.getMonth() + 1,
+      year: periodDate.getFullYear(),
       limitAmount: budget.limitAmount.toString()
     });
     onOpen();
@@ -212,7 +254,8 @@ const BudgetsPage = () => {
         },
         body: JSON.stringify({
           category: formData.category,
-          periodStart: formData.periodStart,
+          month: formData.month,
+          year: formData.year,
           limitAmount: parseFloat(formData.limitAmount)
         })
       });
@@ -290,6 +333,59 @@ const BudgetsPage = () => {
   const confirmDelete = (id) => {
     setDeleteId(id);
     onDeleteOpen();
+  };
+
+  // Fetch transactions for a specific budget
+  const fetchBudgetTransactions = async (budget) => {
+    setSelectedBudget(budget);
+    setIsLoadingTransactions(true);
+    onDrawerOpen();
+
+    try {
+      const periodStart = new Date(budget.periodStart);
+      const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0, 23, 59, 59);
+      const categoryId = budget.category._id || budget.category;
+
+      const response = await fetch('/api/transactions', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+
+      const allTransactions = await response.json();
+      
+      // Filter transactions for this budget's category and period
+      const filteredTransactions = allTransactions.filter(t => {
+        const transDate = new Date(t.date);
+        const transCategoryId = t.category._id || t.category;
+        return (
+          t.type === 'expense' &&
+          transCategoryId === categoryId &&
+          transDate >= periodStart &&
+          transDate <= periodEnd
+        );
+      });
+
+      // Sort by date (newest first)
+      filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      setBudgetTransactions(filteredTransactions);
+    } catch (error) {
+      toast({
+        title: 'Error loading transactions',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+    } finally {
+      setIsLoadingTransactions(false);
+    }
   };
 
   // Format currency
@@ -426,9 +522,20 @@ const BudgetsPage = () => {
                       <Td>{formatMonth(budget.periodStart)}</Td>
                       <Td isNumeric>{formatCurrency(budget.limitAmount)}</Td>
                       <Td isNumeric>
-                        <Text color={spent > budget.limitAmount ? redColor : 'inherit'}>
-                          {formatCurrency(spent)}
-                        </Text>
+                        <HStack spacing={2} justify="flex-end">
+                          <Text color={spent > budget.limitAmount ? redColor : 'inherit'}>
+                            {formatCurrency(spent)}
+                          </Text>
+                          <IconButton
+                            aria-label="View transactions"
+                            icon={<ViewIcon />}
+                            size="xs"
+                            variant="ghost"
+                            colorScheme="blue"
+                            onClick={() => fetchBudgetTransactions(budget)}
+                            title="View transaction breakdown"
+                          />
+                        </HStack>
                       </Td>
                       <Td>
                         <VStack align="start" spacing={1}>
@@ -542,12 +649,34 @@ const BudgetsPage = () => {
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel>Budget Period (Month)</FormLabel>
-                  <Input
-                    type="month"
-                    value={formData.periodStart.slice(0, 7)}
-                    onChange={(e) => setFormData({ ...formData, periodStart: e.target.value + '-01' })}
-                  />
+                  <FormLabel>Month</FormLabel>
+                  <Select
+                    value={formData.month}
+                    onChange={(e) => setFormData({ ...formData, month: parseInt(e.target.value) })}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => {
+                      const monthName = new Date(2000, m - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+                      return (
+                        <option key={m} value={m}>
+                          {monthName}
+                        </option>
+                      );
+                    })}
+                  </Select>
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Year</FormLabel>
+                  <Select
+                    value={formData.year}
+                    onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                  >
+                    {[2024, 2025, 2026, 2027].map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </Select>
                 </FormControl>
 
                 <FormControl isRequired>
@@ -611,6 +740,105 @@ const BudgetsPage = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      {/* Transaction Breakdown Drawer */}
+      <Drawer
+        isOpen={isDrawerOpen}
+        placement="right"
+        onClose={onDrawerClose}
+        size="md"
+      >
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px">
+            <VStack align="start" spacing={2}>
+              <Text fontSize="lg" fontWeight="bold">
+                Transaction Breakdown
+              </Text>
+              {selectedBudget && (
+                <>
+                  <Text fontSize="sm" color={textColor} fontWeight="normal">
+                    {selectedBudget.category?.name || 'Category'} - {formatMonth(selectedBudget.periodStart)}
+                  </Text>
+                  <HStack spacing={4} fontSize="sm">
+                    <Text>
+                      <strong>Budget:</strong> {formatCurrency(selectedBudget.limitAmount)}
+                    </Text>
+                    <Text color={getSpentAmount(selectedBudget) > selectedBudget.limitAmount ? redColor : greenColor}>
+                      <strong>Spent:</strong> {formatCurrency(getSpentAmount(selectedBudget))}
+                    </Text>
+                  </HStack>
+                </>
+              )}
+            </VStack>
+          </DrawerHeader>
+
+          <DrawerBody>
+            {isLoadingTransactions ? (
+              <Center py={10}>
+                <Spinner size="lg" />
+              </Center>
+            ) : budgetTransactions.length === 0 ? (
+              <Center py={10}>
+                <VStack spacing={2}>
+                  <Text color={textColor}>No transactions found</Text>
+                  <Text fontSize="sm" color={textColor}>
+                    No expenses recorded for this budget period
+                  </Text>
+                </VStack>
+              </Center>
+            ) : (
+              <Stack spacing={3}>
+                {budgetTransactions.map((transaction) => (
+                  <Card key={transaction._id} variant="outline" size="sm">
+                    <CardBody>
+                      <Flex justify="space-between" align="start">
+                        <VStack align="start" spacing={1} flex={1}>
+                          <Text fontWeight="medium" fontSize="sm">
+                            {transaction.description || 'No description'}
+                          </Text>
+                          <Text fontSize="xs" color={textColor}>
+                            {new Date(transaction.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </Text>
+                          {transaction.category?.name && (
+                            <Badge colorScheme="gray" fontSize="xs">
+                              {transaction.category.name}
+                            </Badge>
+                          )}
+                        </VStack>
+                        <Text fontWeight="bold" color={redColor} fontSize="md">
+                          -{formatCurrency(transaction.amount)}
+                        </Text>
+                      </Flex>
+                    </CardBody>
+                  </Card>
+                ))}
+                <Divider />
+                <Flex justify="space-between" align="center" p={2} bg={cardBg}>
+                  <Text fontWeight="bold">Total Spent:</Text>
+                  <Text fontWeight="bold" fontSize="lg" color={redColor}>
+                    {formatCurrency(
+                      budgetTransactions.reduce((sum, t) => sum + t.amount, 0)
+                    )}
+                  </Text>
+                </Flex>
+              </Stack>
+            )}
+          </DrawerBody>
+
+          <DrawerFooter borderTopWidth="1px">
+            <Button variant="outline" onClick={onDrawerClose}>
+              Close
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 };

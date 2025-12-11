@@ -35,7 +35,7 @@ const LoginPage = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   // Get the intended destination or default to dashboard
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || '/app/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

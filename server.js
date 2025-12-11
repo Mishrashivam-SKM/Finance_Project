@@ -1,8 +1,11 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
+const { initializeSocket } = require('./utils/socketManager');
 
 // Load environment variables
 dotenv.config();
@@ -11,6 +14,21 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO with CORS configuration
+const io = new Server(server, {
+  cors: {
+    origin: process.env.NODE_ENV === 'production' 
+      ? false 
+      : ['http://localhost:3000', 'http://localhost:3001'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Initialize socket manager with io instance
+initializeSocket(io);
 
 // Middleware
 app.use(cors());
@@ -19,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/categories', require('./routes/categories.routes'));
 app.use('/api/transactions', require('./routes/transactions.routes'));
 app.use('/api/assets', require('./routes/asset.routes'));
 app.use('/api/debts', require('./routes/debt.routes'));
@@ -40,6 +59,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log('Socket.IO initialized and ready');
 });

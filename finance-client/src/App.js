@@ -1,24 +1,55 @@
-import logo from './logo.svg';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthContextProvider } from './context/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
+import MainLayout from './components/MainLayout';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import TransactionsPage from './pages/TransactionsPage';
+import AssetsPage from './pages/AssetsPage';
+import DebtsPage from './pages/DebtsPage';
+import BudgetsPage from './pages/BudgetsPage';
+import QuizzesPage from './pages/QuizzesPage';
+import RetirementPage from './pages/RetirementPage';
+import SimulationPage from './pages/SimulationPage';
+import AdminTipsPage from './pages/AdminTipsPage';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <AuthContextProvider>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Protected routes with MainLayout */}
+        <Route
+          path="/app"
+          element={
+            <PrivateRoute>
+              <MainLayout />
+            </PrivateRoute>
+          }
         >
-          Learn React
-        </a>
-      </header>
-    </div>
+          <Route index element={<Navigate to="/app/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="assets" element={<AssetsPage />} />
+          <Route path="debts" element={<DebtsPage />} />
+          <Route path="budgets" element={<BudgetsPage />} />
+          <Route path="quizzes" element={<QuizzesPage />} />
+          <Route path="retirement" element={<RetirementPage />} />
+          <Route path="simulations" element={<SimulationPage />} />
+          <Route path="admin/tips" element={<AdminTipsPage />} />
+        </Route>
+
+        {/* Catch all - redirect to landing page */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthContextProvider>
   );
 }
 

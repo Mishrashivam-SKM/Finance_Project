@@ -87,7 +87,7 @@ const RegisterPage = () => {
       });
 
       // Navigate to dashboard
-      navigate('/dashboard', { replace: true });
+      navigate('/app/dashboard', { replace: true });
     } catch (error) {
       toast({
         title: 'Registration failed',

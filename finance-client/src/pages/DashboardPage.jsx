@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -33,6 +33,7 @@ import { AddIcon, CalendarIcon } from '@chakra-ui/icons';
 import { Link as RouterLink } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import useSocket from '../hooks/useSocket';
 
 // Color palette for pie chart
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
@@ -53,79 +54,108 @@ const DashboardPage = () => {
   const positiveColor = useColorModeValue('green.500', 'green.300');
   const negativeColor = useColorModeValue('red.500', 'red.300');
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Concurrent API calls
-        const [netWorthResponse, spendingResponse] = await Promise.all([
-          fetch('/api/reports/networth', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }),
-          fetch('/api/reports/spending-breakdown', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-        ]);
-
-        if (!netWorthResponse.ok || !spendingResponse.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-
-        const [netWorth, spending] = await Promise.all([
-          netWorthResponse.json(),
-          spendingResponse.json()
-        ]);
-
-        setNetWorthData(netWorth);
-        setSpendingData(spending);
-      } catch (error) {
-        toast({
-          title: 'Error loading dashboard',
-          description: error.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [token, toast]);
-
-  // Fetch AI saving tip separately (can take longer)
-  useEffect(() => {
-    const fetchSavingTip = async () => {
-      try {
-        const response = await fetch('/api/reports/saving-tips', {
+  // Memoized function to fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      // Concurrent API calls
+      const [netWorthResponse, spendingResponse] = await Promise.all([
+        fetch('/api/reports/networth', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
-        });
+        }),
+        fetch('/api/reports/spending-breakdown', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch saving tip');
-        }
-
-        const data = await response.json();
-        setSavingTipData(data);
-      } catch (error) {
-        console.error('Error fetching saving tip:', error.message);
-        // Don't show toast for tip error - it's not critical
-      } finally {
-        setIsTipLoading(false);
+      if (!netWorthResponse.ok || !spendingResponse.ok) {
+        throw new Error('Failed to fetch dashboard data');
       }
-    };
 
-    fetchSavingTip();
+      const [netWorth, spending] = await Promise.all([
+        netWorthResponse.json(),
+        spendingResponse.json()
+      ]);
+
+      setNetWorthData(netWorth);
+      setSpendingData(spending);
+    } catch (error) {
+      toast({
+        title: 'Error loading dashboard',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, toast]);
+
+  // Memoized function to fetch saving tips
+  const fetchSavingTip = useCallback(async () => {
+    try {
+      const response = await fetch('/api/reports/saving-tips', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch saving tip');
+      }
+
+      const data = await response.json();
+      setSavingTipData(data);
+    } catch (error) {
+      console.error('Error fetching saving tip:', error.message);
+      // Don't show toast for tip error - it's not critical
+    } finally {
+      setIsTipLoading(false);
+    }
   }, [token]);
+
+  // Socket.IO integration - listen for real-time updates
+  useSocket({
+    onBudgetUpdate: (data) => {
+      console.log('Dashboard received budget update:', data);
+      // Refresh dashboard data when budget is updated
+      fetchDashboardData();
+    },
+    onTransactionUpdate: (data) => {
+      console.log('Dashboard received transaction update:', data);
+      // Refresh dashboard data when transaction is created/updated/deleted
+      fetchDashboardData();
+      toast({
+        title: 'Dashboard Updated',
+        description: `Transaction ${data.action || 'changed'} - refreshing your financial data`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true
+      });
+    },
+    onDashboardUpdate: (data) => {
+      console.log('Dashboard received dashboard update:', data);
+      // Refresh all dashboard data and regenerate AI tip
+      fetchDashboardData();
+      fetchSavingTip();
+    }
+  });
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Fetch AI saving tip separately (can take longer)
+  useEffect(() => {
+    fetchSavingTip();
+  }, [fetchSavingTip]);
 
   // Format currency
   const formatCurrency = (amount) => {

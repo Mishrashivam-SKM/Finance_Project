@@ -14,17 +14,18 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { HamburgerIcon } from '@chakra-ui/icons';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, Outlet } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 
 const navItems = [
-  { name: 'Dashboard', path: '/dashboard' },
-  { name: 'Transactions', path: '/transactions' },
-  { name: 'Assets', path: '/assets' },
-  { name: 'Debts', path: '/debts' },
-  { name: 'Budgets', path: '/budgets' },
-  { name: 'Reports', path: '/reports' },
-  { name: 'Simulations', path: '/simulations' }
+  { name: 'Dashboard', path: '/app/dashboard' },
+  { name: 'Transactions', path: '/app/transactions' },
+  { name: 'Assets', path: '/app/assets' },
+  { name: 'Debts', path: '/app/debts' },
+  { name: 'Budgets', path: '/app/budgets' },
+  { name: 'Quizzes', path: '/app/quizzes' },
+  { name: 'Retirement', path: '/app/retirement' },
+  { name: 'Simulations', path: '/app/simulations' }
 ];
 
 const SidebarContent = ({ onClose }) => {
@@ -53,7 +54,7 @@ const SidebarContent = ({ onClose }) => {
   );
 };
 
-const MainLayout = ({ children }) => {
+const MainLayout = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -129,7 +130,7 @@ const MainLayout = ({ children }) => {
         p={6}
         minH="calc(100vh - 60px)"
       >
-        {children}
+        <Outlet />
       </Box>
     </Box>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Heading,
@@ -18,17 +18,12 @@ import {
   useToast,
   Spinner,
   Grid,
-  GridItem,
   Stat,
   StatLabel,
   StatNumber,
   StatHelpText,
   Icon,
   Divider,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Select,
   FormControl,
   FormLabel
@@ -66,6 +61,8 @@ const QuizzesPage = () => {
   const blueColor = useColorModeValue('blue.500', 'blue.300');
   const optionBg = useColorModeValue('gray.50', 'gray.700');
   const selectedBg = useColorModeValue('blue.50', 'blue.900');
+  const correctAnswerBg = useColorModeValue('green.50', 'green.900');
+  const incorrectAnswerBg = useColorModeValue('red.50', 'red.900');
 
   // Start quiz
   const startQuiz = async () => {
@@ -449,10 +446,10 @@ const QuizzesPage = () => {
                     let borderCol = borderColor;
 
                     if (isCorrect) {
-                      bgColor = useColorModeValue('green.50', 'green.900');
+                      bgColor = correctAnswerBg;
                       borderCol = 'green.400';
                     } else if (isSelected && !isCorrect) {
-                      bgColor = useColorModeValue('red.50', 'red.900');
+                      bgColor = incorrectAnswerBg;
                       borderCol = 'red.400';
                     }
 

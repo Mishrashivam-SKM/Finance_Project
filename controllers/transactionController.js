@@ -1,4 +1,5 @@
 const Transaction = require('../models/Transaction');
+const { emitBudgetUpdate, emitTransactionUpdate, emitDashboardUpdate } = require('../utils/socketManager');
 
 /**
  * @desc    Create a new transaction
@@ -23,6 +24,21 @@ const createTransaction = async (req, res) => {
       date,
       description
     });
+
+    // Emit real-time events to the user's room
+    emitBudgetUpdate(req.user.id, {
+      transactionId: transaction._id,
+      type: transaction.type,
+      amount: transaction.amount,
+      action: 'created'
+    });
+    emitTransactionUpdate(req.user.id, {
+      transactionId: transaction._id,
+      type: transaction.type,
+      amount: transaction.amount,
+      action: 'created'
+    });
+    emitDashboardUpdate(req.user.id, { action: 'transaction_created' });
 
     res.status(201).json(transaction);
   } catch (error) {
@@ -80,6 +96,21 @@ const updateTransaction = async (req, res) => {
 
     const updatedTransaction = await transaction.save();
 
+    // Emit real-time events for transaction update
+    emitTransactionUpdate(req.user.id, {
+      transactionId: updatedTransaction._id,
+      type: updatedTransaction.type,
+      amount: updatedTransaction.amount,
+      action: 'updated'
+    });
+    emitBudgetUpdate(req.user.id, {
+      transactionId: updatedTransaction._id,
+      type: updatedTransaction.type,
+      amount: updatedTransaction.amount,
+      action: 'updated'
+    });
+    emitDashboardUpdate(req.user.id, { action: 'transaction_updated' });
+
     res.json(updatedTransaction);
   } catch (error) {
     console.error('Update transaction error:', error.message);
@@ -107,6 +138,17 @@ const deleteTransaction = async (req, res) => {
     }
 
     await Transaction.findByIdAndDelete(req.params.id);
+
+    // Emit real-time events for transaction deletion
+    emitTransactionUpdate(req.user.id, {
+      transactionId: transaction._id,
+      action: 'deleted'
+    });
+    emitBudgetUpdate(req.user.id, {
+      transactionId: transaction._id,
+      action: 'deleted'
+    });
+    emitDashboardUpdate(req.user.id, { action: 'transaction_deleted' });
 
     res.json({ message: 'Transaction removed successfully' });
   } catch (error) {
