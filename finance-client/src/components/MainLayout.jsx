@@ -11,10 +11,16 @@ import {
   DrawerContent,
   DrawerCloseButton,
   DrawerBody,
-  useColorModeValue
+  useColorModeValue,
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem
 } from '@chakra-ui/react';
-import { HamburgerIcon } from '@chakra-ui/icons';
-import { Link as RouterLink, useLocation, Outlet } from 'react-router-dom';
+import { HamburgerIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { Link as RouterLink, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
 const navItems = [
@@ -57,9 +63,16 @@ const SidebarContent = ({ onClose }) => {
 
 const MainLayout = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const sidebarBg = useColorModeValue('gray.50', 'gray.900');
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <Box minH="100vh">
@@ -76,25 +89,46 @@ const MainLayout = () => {
         borderColor={borderColor}
         align="center"
         justify="space-between"
-        px={4}
+        px={{ base: 3, md: 4 }}
         zIndex={1000}
       >
-        <Flex align="center">
+        <Flex align="center" gap={2}>
           {/* Mobile menu button */}
           <IconButton
             display={{ base: 'flex', md: 'none' }}
             aria-label="Open menu"
             icon={<HamburgerIcon />}
             variant="ghost"
+            size="sm"
             onClick={onOpen}
-            mr={2}
           />
           {/* Logo */}
-          <Text fontSize="xl" fontWeight="bold" color="blue.500">
+          <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight="bold" color="blue.500" isTruncated>
             FinanceTracker
           </Text>
         </Flex>
-        <ThemeToggle />
+        <Flex align="center" gap={2}>
+          <ThemeToggle />
+          <Menu>
+            <MenuButton
+              as={Button}
+              rightIcon={<ChevronDownIcon />}
+              variant="ghost"
+              size="sm"
+              fontSize={{ base: 'xs', md: 'sm' }}
+            >
+              {user?.username ? user.username.substring(0, 8) : 'Menu'}
+            </MenuButton>
+            <MenuList>
+              <MenuItem as={RouterLink} to="/app/profile">
+                Profile
+              </MenuItem>
+              <MenuItem onClick={handleLogout} color="red.500">
+                Logout
+              </MenuItem>
+            </MenuList>
+          </Menu>
+        </Flex>
       </Flex>
 
       {/* Mobile Sidebar Drawer */}
@@ -114,7 +148,7 @@ const MainLayout = () => {
         position="fixed"
         top="60px"
         left={0}
-        w="240px"
+        w={{ md: '220px', lg: '240px' }}
         h="calc(100vh - 60px)"
         bg={sidebarBg}
         borderRight="1px"
@@ -126,10 +160,11 @@ const MainLayout = () => {
 
       {/* Main Content Area */}
       <Box
-        ml={{ base: 0, md: '240px' }}
+        ml={{ base: 0, md: '220px', lg: '240px' }}
         mt="60px"
-        p={6}
+        p={{ base: 3, sm: 4, md: 6 }}
         minH="calc(100vh - 60px)"
+        maxW="100%"
       >
         <Outlet />
       </Box>

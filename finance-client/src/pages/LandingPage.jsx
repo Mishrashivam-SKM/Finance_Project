@@ -30,6 +30,7 @@ import {
   FiZap
 } from 'react-icons/fi';
 import { FaRobot, FaChartLine, FaCalculator, FaUmbrella } from 'react-icons/fa';
+import ThemeToggle from '../components/ThemeToggle';
 
 const LandingPage = () => {
   // Theme colors
@@ -95,6 +96,25 @@ const LandingPage = () => {
 
   return (
     <Box>
+      {/* Navbar */}
+      <Flex
+        position="sticky"
+        top={0}
+        zIndex={100}
+        bg={cardBg}
+        borderBottom="1px"
+        borderColor={borderColor}
+        px={{ base: 4, md: 8 }}
+        py={4}
+        justify="space-between"
+        align="center"
+      >
+        <Heading size="md" color="blue.500">
+          FinanceTracker
+        </Heading>
+        <ThemeToggle />
+      </Flex>
+
       {/* Hero Section */}
       <Box
         bgGradient={bgGradient}
