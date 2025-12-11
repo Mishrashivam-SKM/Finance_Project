@@ -25,7 +25,8 @@ const navItems = [
   { name: 'Budgets', path: '/app/budgets' },
   { name: 'Quizzes', path: '/app/quizzes' },
   { name: 'Retirement', path: '/app/retirement' },
-  { name: 'Simulations', path: '/app/simulations' }
+  { name: 'Simulations', path: '/app/simulations' },
+  { name: 'Profile', path: '/app/profile' }
 ];
 
 const SidebarContent = ({ onClose }) => {

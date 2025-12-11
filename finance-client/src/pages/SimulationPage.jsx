@@ -40,6 +40,7 @@ import {
   AreaChart
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../utils/currency';
 
 // Risk profile defaults
 const RISK_PROFILES = {
@@ -125,15 +126,6 @@ const SimulationPage = () => {
     }
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
   // Custom tooltip for chart
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -142,13 +134,13 @@ const SimulationPage = () => {
           <Text fontWeight="bold" mb={2}>Year {label}</Text>
           <VStack align="start" spacing={1}>
             <Text fontSize="sm" color={blueColor}>
-              Total Value: {formatCurrency(payload[0]?.value)}
+              Total Value: {formatINR(payload[0]?.value)}
             </Text>
             <Text fontSize="sm" color={greenColor}>
-              Contributions: {formatCurrency(payload[1]?.value)}
+              Contributions: {formatINR(payload[1]?.value)}
             </Text>
             <Text fontSize="sm" color={purpleColor}>
-              Interest: {formatCurrency(payload[2]?.value)}
+              Interest: {formatINR(payload[2]?.value)}
             </Text>
           </VStack>
         </Box>
@@ -194,7 +186,7 @@ const SimulationPage = () => {
                   <FormControl isRequired>
                     <FormLabel>Initial Investment</FormLabel>
                     <InputGroup>
-                      <InputLeftElement color={textColor}>$</InputLeftElement>
+                      <InputLeftElement color={textColor}>₹</InputLeftElement>
                       <Input
                         type="number"
                         min="0"
@@ -210,7 +202,7 @@ const SimulationPage = () => {
                   <FormControl isRequired>
                     <FormLabel>Monthly Contribution</FormLabel>
                     <InputGroup>
-                      <InputLeftElement color={textColor}>$</InputLeftElement>
+                      <InputLeftElement color={textColor}>₹</InputLeftElement>
                       <Input
                         type="number"
                         min="0"
@@ -292,7 +284,7 @@ const SimulationPage = () => {
                     <Stat>
                       <StatLabel color={textColor}>Final Value</StatLabel>
                       <StatNumber color={blueColor} fontSize="2xl">
-                        {formatCurrency(results.finalValue)}
+                        {formatINR(results.finalValue)}
                       </StatNumber>
                       <StatHelpText>After {results.years} years</StatHelpText>
                     </Stat>
@@ -300,7 +292,7 @@ const SimulationPage = () => {
                     <Stat>
                       <StatLabel color={textColor}>Total Contributions</StatLabel>
                       <StatNumber color={greenColor} fontSize="2xl">
-                        {formatCurrency(results.totalContributions)}
+                        {formatINR(results.totalContributions)}
                       </StatNumber>
                       <StatHelpText>Principal invested</StatHelpText>
                     </Stat>
@@ -308,7 +300,7 @@ const SimulationPage = () => {
                     <Stat>
                       <StatLabel color={textColor}>Total Interest Earned</StatLabel>
                       <StatNumber color={purpleColor} fontSize="2xl">
-                        {formatCurrency(results.totalInterestEarned)}
+                        {formatINR(results.totalInterestEarned)}
                       </StatNumber>
                       <StatHelpText>
                         {((results.totalInterestEarned / results.totalContributions) * 100).toFixed(0)}% gain
@@ -391,13 +383,13 @@ const SimulationPage = () => {
                         <>
                           <Text key={`year-${projection.year}`}>{projection.year}</Text>
                           <Text key={`value-${projection.year}`} color={blueColor}>
-                            {formatCurrency(projection.value)}
+                            {formatINR(projection.value)}
                           </Text>
                           <Text key={`contrib-${projection.year}`} color={greenColor}>
-                            {formatCurrency(projection.totalContributions)}
+                            {formatINR(projection.totalContributions)}
                           </Text>
                           <Text key={`interest-${projection.year}`} color={purpleColor}>
-                            {formatCurrency(projection.interestEarned)}
+                            {formatINR(projection.interestEarned)}
                           </Text>
                         </>
                       ))}

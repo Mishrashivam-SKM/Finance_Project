@@ -62,6 +62,7 @@ import {
 import { AddIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAuth } from '../context/AuthContext';
 import useSocket from '../hooks/useSocket';
+import { formatINR } from '../utils/currency';
 
 const BudgetsPage = () => {
   const [budgets, setBudgets] = useState([]);
@@ -102,6 +103,7 @@ const BudgetsPage = () => {
   const greenColor = useColorModeValue('green.500', 'green.300');
   const redColor = useColorModeValue('red.500', 'red.300');
   const orangeColor = useColorModeValue('orange.500', 'orange.300');
+  const modalBg = useColorModeValue('white', 'gray.800');
 
   // Memoized function to fetch all data
   const fetchData = useCallback(async () => {
@@ -388,14 +390,6 @@ const BudgetsPage = () => {
     }
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   // Format month
   const formatMonth = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -445,7 +439,7 @@ const BudgetsPage = () => {
               <Stat>
                 <StatLabel color={textColor}>Total Budget</StatLabel>
                 <StatNumber fontSize="2xl">
-                  {formatCurrency(totalBudgetLimit)}
+                  {formatINR(totalBudgetLimit)}
                 </StatNumber>
                 <StatHelpText>Monthly limit</StatHelpText>
               </Stat>
@@ -458,7 +452,7 @@ const BudgetsPage = () => {
               <Stat>
                 <StatLabel color={textColor}>Total Spent</StatLabel>
                 <StatNumber color={totalSpent > totalBudgetLimit ? redColor : orangeColor} fontSize="2xl">
-                  {formatCurrency(totalSpent)}
+                  {formatINR(totalSpent)}
                 </StatNumber>
                 <StatHelpText>
                   {totalBudgetLimit > 0 ? `${((totalSpent / totalBudgetLimit) * 100).toFixed(0)}% used` : 'No budget set'}
@@ -473,7 +467,7 @@ const BudgetsPage = () => {
               <Stat>
                 <StatLabel color={textColor}>Remaining</StatLabel>
                 <StatNumber color={totalRemaining >= 0 ? greenColor : redColor} fontSize="2xl">
-                  {formatCurrency(Math.abs(totalRemaining))}
+                  {formatINR(Math.abs(totalRemaining))}
                 </StatNumber>
                 <StatHelpText>{totalRemaining >= 0 ? 'Left to spend' : 'Over budget'}</StatHelpText>
               </Stat>
@@ -520,11 +514,11 @@ const BudgetsPage = () => {
                     <Tr key={budget._id}>
                       <Td fontWeight="medium">{budget.category?.name || 'N/A'}</Td>
                       <Td>{formatMonth(budget.periodStart)}</Td>
-                      <Td isNumeric>{formatCurrency(budget.limitAmount)}</Td>
+                      <Td isNumeric>{formatINR(budget.limitAmount)}</Td>
                       <Td isNumeric>
                         <HStack spacing={2} justify="flex-end">
                           <Text color={spent > budget.limitAmount ? redColor : 'inherit'}>
-                            {formatCurrency(spent)}
+                            {formatINR(spent)}
                           </Text>
                           <IconButton
                             aria-label="View transactions"
@@ -625,7 +619,7 @@ const BudgetsPage = () => {
       {/* Add/Edit Budget Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg={modalBg}>
           <ModalHeader>
             {editingBudget ? 'Edit Budget' : 'Add New Budget'}
           </ModalHeader>
@@ -763,10 +757,10 @@ const BudgetsPage = () => {
                   </Text>
                   <HStack spacing={4} fontSize="sm">
                     <Text>
-                      <strong>Budget:</strong> {formatCurrency(selectedBudget.limitAmount)}
+                      <strong>Budget:</strong> {formatINR(selectedBudget.limitAmount)}
                     </Text>
                     <Text color={getSpentAmount(selectedBudget) > selectedBudget.limitAmount ? redColor : greenColor}>
-                      <strong>Spent:</strong> {formatCurrency(getSpentAmount(selectedBudget))}
+                      <strong>Spent:</strong> {formatINR(getSpentAmount(selectedBudget))}
                     </Text>
                   </HStack>
                 </>
@@ -813,7 +807,7 @@ const BudgetsPage = () => {
                           )}
                         </VStack>
                         <Text fontWeight="bold" color={redColor} fontSize="md">
-                          -{formatCurrency(transaction.amount)}
+                          -{formatINR(transaction.amount)}
                         </Text>
                       </Flex>
                     </CardBody>
@@ -823,7 +817,7 @@ const BudgetsPage = () => {
                 <Flex justify="space-between" align="center" p={2} bg={cardBg}>
                   <Text fontWeight="bold">Total Spent:</Text>
                   <Text fontWeight="bold" fontSize="lg" color={redColor}>
-                    {formatCurrency(
+                    {formatINR(
                       budgetTransactions.reduce((sum, t) => sum + t.amount, 0)
                     )}
                   </Text>

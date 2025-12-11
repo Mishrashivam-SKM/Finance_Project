@@ -4,7 +4,9 @@ const {
   registerUser,
   loginUser,
   getCurrentUser,
-  updateUser
+  updateUser,
+  forgotPasswordRequest,
+  resetPassword
 } = require('../controllers/authController');
 
 const router = express.Router();
@@ -18,6 +20,16 @@ router.post('/register', registerUser);
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', loginUser);
+
+// @route   POST /api/auth/forgotpassword
+// @desc    Request password reset token
+// @access  Public
+router.post('/forgotpassword', forgotPasswordRequest);
+
+// @route   POST /api/auth/resetpassword
+// @desc    Reset password with token
+// @access  Public
+router.post('/resetpassword', resetPassword);
 
 // @route   GET /api/users/me
 // @desc    Get current user profile

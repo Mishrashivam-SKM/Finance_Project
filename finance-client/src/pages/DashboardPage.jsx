@@ -34,6 +34,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import useSocket from '../hooks/useSocket';
+import { formatINR } from '../utils/currency';
 
 // Color palette for pie chart
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B6B'];
@@ -157,15 +158,14 @@ const DashboardPage = () => {
     fetchSavingTip();
   }, [fetchSavingTip]);
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  // Format date
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
-
-  // Prepare pie chart data
   const getPieChartData = () => {
     if (!spendingData?.breakdown || spendingData.breakdown.length === 0) {
       return [];
@@ -227,7 +227,7 @@ const DashboardPage = () => {
                 <Text fontSize="sm" color={textColor} mt={3}>
                   Based on your spending: Highest category is{' '}
                   <strong>{savingTipData.expenses.highestCategory.name}</strong> at{' '}
-                  {formatCurrency(savingTipData.expenses.highestCategory.amount)}
+                  {formatINR(savingTipData.expenses.highestCategory.amount)}
                 </Text>
               )}
             </Alert>
@@ -248,7 +248,7 @@ const DashboardPage = () => {
       >
         {/* Net Worth Card */}
         <GridItem colSpan={{ base: 1, lg: 2 }}>
-          <Card bg={cardBg} border="1px" borderColor={borderColor}>
+          <Card bg={cardBg} border="1px" borderColor={borderColor} h={{ base: 'auto', lg: '100%' }} minH={{ base: 'auto', lg: '320px' }}>
             <CardHeader>
               <Heading size="md">Net Worth Overview</Heading>
             </CardHeader>
@@ -257,7 +257,7 @@ const DashboardPage = () => {
                 <Stat>
                   <StatLabel color={textColor}>Total Assets</StatLabel>
                   <StatNumber color={positiveColor}>
-                    {formatCurrency(netWorthData?.totalAssets || 0)}
+                    {formatINR(netWorthData?.totalAssets || 0)}
                   </StatNumber>
                   <StatHelpText>
                     <StatArrow type="increase" />
@@ -268,7 +268,7 @@ const DashboardPage = () => {
                 <Stat>
                   <StatLabel color={textColor}>Total Debts</StatLabel>
                   <StatNumber color={negativeColor}>
-                    {formatCurrency(netWorthData?.totalDebts || 0)}
+                    {formatINR(netWorthData?.totalDebts || 0)}
                   </StatNumber>
                   <StatHelpText>
                     <StatArrow type="decrease" />
@@ -285,7 +285,7 @@ const DashboardPage = () => {
                         : negativeColor
                     }
                   >
-                    {formatCurrency(netWorthData?.netWorth || 0)}
+                    {formatINR(netWorthData?.netWorth || 0)}
                   </StatNumber>
                   <StatHelpText>Assets - Debts</StatHelpText>
                 </Stat>
@@ -304,7 +304,7 @@ const DashboardPage = () => {
               <VStack spacing={4} align="stretch">
                 <Button
                   as={RouterLink}
-                  to="/transactions"
+                  to="/app/transactions"
                   leftIcon={<AddIcon />}
                   colorScheme="blue"
                   size="lg"
@@ -313,7 +313,7 @@ const DashboardPage = () => {
                 </Button>
                 <Button
                   as={RouterLink}
-                  to="/budgets"
+                  to="/app/budgets"
                   leftIcon={<CalendarIcon />}
                   colorScheme="green"
                   size="lg"
@@ -323,7 +323,7 @@ const DashboardPage = () => {
                 </Button>
                 <Button
                   as={RouterLink}
-                  to="/assets"
+                  to="/app/assets"
                   colorScheme="purple"
                   size="lg"
                   variant="outline"
@@ -332,7 +332,7 @@ const DashboardPage = () => {
                 </Button>
                 <Button
                   as={RouterLink}
-                  to="/debts"
+                  to="/app/debts"
                   colorScheme="orange"
                   size="lg"
                   variant="outline"
@@ -380,7 +380,7 @@ const DashboardPage = () => {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value) => formatCurrency(value)}
+                          formatter={(value) => formatINR(value)}
                         />
                         <Legend />
                       </PieChart>
@@ -393,7 +393,7 @@ const DashboardPage = () => {
                         Total Spending This Month
                       </Text>
                       <Text fontSize="2xl" fontWeight="bold" color={negativeColor}>
-                        {formatCurrency(spendingData?.totalSpending || 0)}
+                        {formatINR(spendingData?.totalSpending || 0)}
                       </Text>
                     </Box>
                     <Divider />
@@ -410,7 +410,7 @@ const DashboardPage = () => {
                             <Text fontSize="sm">{item.categoryName}</Text>
                           </HStack>
                           <Text fontSize="sm" fontWeight="semibold">
-                            {formatCurrency(item.totalSpent)}
+                            {formatINR(item.totalSpent)}
                           </Text>
                         </HStack>
                       ))}

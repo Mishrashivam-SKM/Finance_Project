@@ -50,6 +50,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../utils/currency';
 
 const AssetsPage = () => {
   const [assets, setAssets] = useState([]);
@@ -80,6 +81,7 @@ const AssetsPage = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.400');
   const greenColor = useColorModeValue('green.500', 'green.300');
+  const modalBg = useColorModeValue('white', 'gray.800');
 
   // Fetch assets and categories
   useEffect(() => {
@@ -255,14 +257,6 @@ const AssetsPage = () => {
     onDeleteOpen();
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   // Format date
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -297,7 +291,7 @@ const AssetsPage = () => {
               <Stat>
                 <StatLabel color={textColor}>Total Asset Value</StatLabel>
                 <StatNumber color={greenColor} fontSize="3xl">
-                  {formatCurrency(totalAssetValue)}
+                  {formatINR(totalAssetValue)}
                 </StatNumber>
                 <StatHelpText>Across all assets</StatHelpText>
               </Stat>
@@ -338,7 +332,7 @@ const AssetsPage = () => {
                     <Td>{asset.category?.name || 'N/A'}</Td>
                     <Td isNumeric>
                       <Text color={greenColor} fontWeight="semibold">
-                        {formatCurrency(asset.currentValue)}
+                        {formatINR(asset.currentValue)}
                       </Text>
                     </Td>
                     <Td>{formatDate(asset.lastUpdated || asset.updatedAt)}</Td>
@@ -410,7 +404,7 @@ const AssetsPage = () => {
       {/* Add/Edit Asset Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg={modalBg}>
           <ModalHeader>
             {editingAsset ? 'Edit Asset' : 'Add New Asset'}
           </ModalHeader>
@@ -445,7 +439,7 @@ const AssetsPage = () => {
                 <FormControl isRequired>
                   <FormLabel>Current Value</FormLabel>
                   <InputGroup>
-                    <InputLeftElement color={textColor}>$</InputLeftElement>
+                    <InputLeftElement color={textColor}>₹</InputLeftElement>
                     <Input
                       type="number"
                       step="0.01"

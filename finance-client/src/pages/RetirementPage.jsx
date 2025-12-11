@@ -37,6 +37,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../utils/currency';
 
 const RetirementPage = () => {
   const [formData, setFormData] = useState({
@@ -108,15 +109,6 @@ const RetirementPage = () => {
     }
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
   // Custom tooltip for chart
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -125,13 +117,13 @@ const RetirementPage = () => {
           <Text fontWeight="bold" mb={2}>Year {label}</Text>
           <VStack align="start" spacing={1}>
             <Text fontSize="sm" color={greenColor}>
-              Inflation-Adjusted: {formatCurrency(payload[0]?.value)}
+              Inflation-Adjusted: {formatINR(payload[0]?.value)}
             </Text>
             <Text fontSize="sm" color={blueColor}>
-              Nominal Value: {formatCurrency(payload[1]?.value)}
+              Nominal Value: {formatINR(payload[1]?.value)}
             </Text>
             <Text fontSize="sm" color={purpleColor}>
-              Total Contributions: {formatCurrency(payload[2]?.value)}
+              Total Contributions: {formatINR(payload[2]?.value)}
             </Text>
           </VStack>
         </Box>
@@ -277,7 +269,7 @@ const RetirementPage = () => {
                       Your Projected Retirement Nest Egg
                     </Text>
                     <Heading size="2xl" color={greenColor}>
-                      {formatCurrency(results.projectedInflationAdjustedValue)}
+                      {formatINR(results.projectedInflationAdjustedValue)}
                     </Heading>
                     <Text fontSize="sm" color={textColor}>
                       In today's dollars (inflation-adjusted)
@@ -285,7 +277,7 @@ const RetirementPage = () => {
                     <Divider my={2} />
                     <HStack spacing={4}>
                       <Badge colorScheme="blue" fontSize="sm" px={3} py={1}>
-                        Nominal: {formatCurrency(results.projectedNominalValue)}
+                        Nominal: {formatINR(results.projectedNominalValue)}
                       </Badge>
                       <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
                         Real Return: {results.realRateOfReturn}%
@@ -310,7 +302,7 @@ const RetirementPage = () => {
                     <Stat>
                       <StatLabel color={textColor}>Total Contributions</StatLabel>
                       <StatNumber color={purpleColor} fontSize="xl">
-                        {formatCurrency(results.totalContributions)}
+                        {formatINR(results.totalContributions)}
                       </StatNumber>
                       <StatHelpText>Over {results.yearsUntilRetirement} years</StatHelpText>
                     </Stat>
@@ -318,7 +310,7 @@ const RetirementPage = () => {
                     <Stat>
                       <StatLabel color={textColor}>Nominal Growth</StatLabel>
                       <StatNumber color={blueColor} fontSize="xl">
-                        {formatCurrency(results.totalNominalGrowth)}
+                        {formatINR(results.totalNominalGrowth)}
                       </StatNumber>
                       <StatHelpText>Before inflation adjustment</StatHelpText>
                     </Stat>
@@ -326,7 +318,7 @@ const RetirementPage = () => {
                     <Stat>
                       <StatLabel color={textColor}>Real Growth</StatLabel>
                       <StatNumber color={greenColor} fontSize="xl">
-                        {formatCurrency(results.totalRealGrowth)}
+                        {formatINR(results.totalRealGrowth)}
                       </StatNumber>
                       <StatHelpText>Inflation-adjusted growth</StatHelpText>
                     </Stat>

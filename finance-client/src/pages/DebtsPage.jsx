@@ -53,6 +53,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../utils/currency';
 
 const DebtsPage = () => {
   const [debts, setDebts] = useState([]);
@@ -88,6 +89,7 @@ const DebtsPage = () => {
   const textColor = useColorModeValue('gray.600', 'gray.400');
   const redColor = useColorModeValue('red.500', 'red.300');
   const orangeColor = useColorModeValue('orange.500', 'orange.300');
+  const modalBg = useColorModeValue('white', 'gray.800');
 
   // Fetch debts and categories
   useEffect(() => {
@@ -283,14 +285,6 @@ const DebtsPage = () => {
     onDeleteOpen();
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   // Format date
   const formatDate = (date) => {
     if (!date) return 'N/A';
@@ -332,7 +326,7 @@ const DebtsPage = () => {
               <Stat>
                 <StatLabel color={textColor}>Total Debt Balance</StatLabel>
                 <StatNumber color={redColor} fontSize="3xl">
-                  {formatCurrency(totalDebtBalance)}
+                  {formatINR(totalDebtBalance)}
                 </StatNumber>
                 <StatHelpText>Remaining to pay</StatHelpText>
               </Stat>
@@ -345,7 +339,7 @@ const DebtsPage = () => {
               <Stat>
                 <StatLabel color={textColor}>Total Paid Off</StatLabel>
                 <StatNumber color="green.500" fontSize="3xl">
-                  {formatCurrency(totalPaidOff)}
+                  {formatINR(totalPaidOff)}
                 </StatNumber>
                 <StatHelpText>{payoffPercentage.toFixed(1)}% of original debt</StatHelpText>
               </Stat>
@@ -377,7 +371,7 @@ const DebtsPage = () => {
               borderRadius="full"
             />
             <Text fontSize="sm" color={textColor} mt={2}>
-              {formatCurrency(totalPaidOff)} paid of {formatCurrency(totalOriginalDebt)} total
+              {formatINR(totalPaidOff)} paid of {formatINR(totalOriginalDebt)} total
             </Text>
           </CardBody>
         </Card>
@@ -406,7 +400,7 @@ const DebtsPage = () => {
                     <Td>{debt.category?.name || 'N/A'}</Td>
                     <Td isNumeric>
                       <Text color={redColor} fontWeight="semibold">
-                        {formatCurrency(debt.remainingBalance)}
+                        {formatINR(debt.remainingBalance)}
                       </Text>
                     </Td>
                     <Td isNumeric>
@@ -497,7 +491,7 @@ const DebtsPage = () => {
       {/* Add/Edit Debt Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg={modalBg}>
           <ModalHeader>
             {editingDebt ? 'Edit Debt' : 'Add New Debt'}
           </ModalHeader>
@@ -532,7 +526,7 @@ const DebtsPage = () => {
                 <FormControl isRequired>
                   <FormLabel>Original Amount</FormLabel>
                   <InputGroup>
-                    <InputLeftElement color={textColor}>$</InputLeftElement>
+                    <InputLeftElement color={textColor}>₹</InputLeftElement>
                     <Input
                       type="number"
                       step="0.01"
@@ -547,7 +541,7 @@ const DebtsPage = () => {
                 <FormControl isRequired>
                   <FormLabel>Remaining Balance</FormLabel>
                   <InputGroup>
-                    <InputLeftElement color={textColor}>$</InputLeftElement>
+                    <InputLeftElement color={textColor}>₹</InputLeftElement>
                     <Input
                       type="number"
                       step="0.01"
@@ -578,7 +572,7 @@ const DebtsPage = () => {
                 <FormControl>
                   <FormLabel>Minimum Payment</FormLabel>
                   <InputGroup>
-                    <InputLeftElement color={textColor}>$</InputLeftElement>
+                    <InputLeftElement color={textColor}>₹</InputLeftElement>
                     <Input
                       type="number"
                       step="0.01"

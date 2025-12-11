@@ -1,4 +1,6 @@
 const Budget = require('../models/Budget');
+const Transaction = require('../models/Transaction');
+const mongoose = require('mongoose');
 
 /**
  * @desc    Create a new monthly budget
@@ -26,6 +28,58 @@ const createBudget = async (req, res) => {
 
     if (existingBudget) {
       return res.status(400).json({ message: 'Budget already exists for this category and period' });
+    }
+
+    // Calculate period boundaries
+    const periodEnd = new Date(year, month, 0, 23, 59, 59, 999); // Last day of the month
+
+    // Get total income for the period
+    const incomeResult = await Transaction.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.user.id),
+          type: 'income',
+          date: { $gte: periodStart, $lte: periodEnd }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalIncome: { $sum: '$amount' }
+        }
+      }
+    ]);
+
+    const totalIncome = incomeResult.length > 0 ? incomeResult[0].totalIncome : 0;
+
+    // Get sum of existing allocated budgets for this period (excluding current budget being created)
+    const existingBudgetsResult = await Budget.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.user.id),
+          periodStart: periodStart
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalAllocated: { $sum: '$limitAmount' }
+        }
+      }
+    ]);
+
+    const existingAllocated = existingBudgetsResult.length > 0 ? existingBudgetsResult[0].totalAllocated : 0;
+    const newTotalAllocated = existingAllocated + limitAmount;
+
+    // Validate that total allocation doesn't exceed income
+    if (newTotalAllocated > totalIncome) {
+      return res.status(400).json({
+        message: `Total budget allocation ($${newTotalAllocated.toFixed(2)}) exceeds total income for the period ($${totalIncome.toFixed(2)})`,
+        totalIncome: totalIncome,
+        existingAllocated: existingAllocated,
+        requestedAmount: limitAmount,
+        newTotalAllocated: newTotalAllocated
+      });
     }
 
     // Create budget with userId from authenticated user
@@ -81,6 +135,73 @@ const updateBudget = async (req, res) => {
     // Verify user ownership
     if (budget.userId.toString() !== req.user.id) {
       return res.status(401).json({ message: 'Not authorized to update this budget' });
+    }
+
+    // Determine the period to check (use new period if provided, otherwise use existing)
+    let checkPeriodStart = budget.periodStart;
+    let checkMonth = budget.periodStart.getMonth() + 1;
+    let checkYear = budget.periodStart.getFullYear();
+
+    if (month !== undefined && year !== undefined) {
+      checkPeriodStart = new Date(year, month - 1, 1);
+      checkMonth = month;
+      checkYear = year;
+    }
+
+    const checkPeriodEnd = new Date(checkYear, checkMonth, 0, 23, 59, 59, 999);
+
+    // Get the new limit amount (use provided or existing)
+    const newLimitAmount = limitAmount !== undefined ? limitAmount : budget.limitAmount;
+    const oldLimitAmount = budget.limitAmount;
+
+    // Get total income for the period
+    const incomeResult = await Transaction.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.user.id),
+          type: 'income',
+          date: { $gte: checkPeriodStart, $lte: checkPeriodEnd }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalIncome: { $sum: '$amount' }
+        }
+      }
+    ]);
+
+    const totalIncome = incomeResult.length > 0 ? incomeResult[0].totalIncome : 0;
+
+    // Get sum of existing allocated budgets for this period (excluding the current budget being updated)
+    const existingBudgetsResult = await Budget.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.user.id),
+          periodStart: checkPeriodStart,
+          _id: { $ne: budget._id } // Exclude current budget from calculation
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalAllocated: { $sum: '$limitAmount' }
+        }
+      }
+    ]);
+
+    const existingAllocated = existingBudgetsResult.length > 0 ? existingBudgetsResult[0].totalAllocated : 0;
+    const newTotalAllocated = existingAllocated + newLimitAmount;
+
+    // Validate that total allocation doesn't exceed income
+    if (newTotalAllocated > totalIncome) {
+      return res.status(400).json({
+        message: `Total budget allocation ($${newTotalAllocated.toFixed(2)}) exceeds total income for the period ($${totalIncome.toFixed(2)})`,
+        totalIncome: totalIncome,
+        existingAllocated: existingAllocated,
+        requestedAmount: newLimitAmount,
+        newTotalAllocated: newTotalAllocated
+      });
     }
 
     // Update budget fields

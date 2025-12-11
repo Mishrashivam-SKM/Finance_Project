@@ -5,6 +5,7 @@ import MainLayout from './components/MainLayout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import TransactionsPage from './pages/TransactionsPage';
 import AssetsPage from './pages/AssetsPage';
@@ -14,7 +15,12 @@ import QuizzesPage from './pages/QuizzesPage';
 import RetirementPage from './pages/RetirementPage';
 import SimulationPage from './pages/SimulationPage';
 import AdminTipsPage from './pages/AdminTipsPage';
+import ProfilePage from './pages/ProfilePage';
+import { formatINR } from './utils/currency';
 import './App.css';
+
+// Make formatINR globally accessible for easy use in components
+window.formatINR = formatINR;
 
 function App() {
   return (
@@ -24,6 +30,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/resetpassword" element={<ResetPasswordPage />} />
 
         {/* Protected routes with MainLayout */}
         <Route
@@ -44,6 +51,7 @@ function App() {
           <Route path="retirement" element={<RetirementPage />} />
           <Route path="simulations" element={<SimulationPage />} />
           <Route path="admin/tips" element={<AdminTipsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         {/* Catch all - redirect to landing page */}

@@ -43,6 +43,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, DeleteIcon, SearchIcon } from '@chakra-ui/icons';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../utils/currency';
 import { useRef } from 'react';
 
 const TransactionsPage = () => {
@@ -80,6 +81,7 @@ const TransactionsPage = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.400');
+  const modalBg = useColorModeValue('white', 'gray.800');
 
   // Fetch transactions and categories
   useEffect(() => {
@@ -274,14 +276,6 @@ const TransactionsPage = () => {
     onDeleteOpen();
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   // Format date
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -399,7 +393,7 @@ const TransactionsPage = () => {
                     <Td isNumeric fontWeight="semibold">
                       <Text color={transaction.type === 'income' ? 'green.500' : 'red.500'}>
                         {transaction.type === 'income' ? '+' : '-'}
-                        {formatCurrency(transaction.amount)}
+                        {formatINR(transaction.amount)}
                       </Text>
                     </Td>
                     <Td>
@@ -475,7 +469,7 @@ const TransactionsPage = () => {
       {/* Add/Edit Transaction Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg={modalBg}>
           <ModalHeader>
             {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
           </ModalHeader>
@@ -514,7 +508,7 @@ const TransactionsPage = () => {
                 <FormControl isRequired>
                   <FormLabel>Amount</FormLabel>
                   <InputGroup>
-                    <InputLeftElement color={textColor}>$</InputLeftElement>
+                    <InputLeftElement color={textColor}>₹</InputLeftElement>
                     <Input
                       type="number"
                       step="0.01"

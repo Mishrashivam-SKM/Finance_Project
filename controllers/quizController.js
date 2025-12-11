@@ -91,7 +91,8 @@ const submitQuiz = async (req, res) => {
         selectedIndex: answer.selectedIndex,
         correctAnswerIndex: question.correctAnswerIndex,
         isCorrect,
-        category: question.category
+        category: question.category,
+        explanation: question.explanation
       };
     });
 

@@ -1,4 +1,5 @@
 const Transaction = require('../models/Transaction');
+const Budget = require('../models/Budget');
 const { emitBudgetUpdate, emitTransactionUpdate, emitDashboardUpdate } = require('../utils/socketManager');
 
 /**
@@ -13,6 +14,65 @@ const createTransaction = async (req, res) => {
     // Validate required fields
     if (!category || !type || !amount || !date) {
       return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    // For expense transactions, check if a budget exists for the category and period
+    if (type === 'expense') {
+      const transactionDate = new Date(date);
+      const year = transactionDate.getFullYear();
+      const month = transactionDate.getMonth() + 1; // getMonth() returns 0-11
+      
+      // Calculate period start (first day of the month)
+      const periodStart = new Date(year, month - 1, 1);
+      
+      // Check if budget exists for this category and period
+      const budgetExists = await Budget.findOne({
+        userId: req.user.id,
+        category: category,
+        periodStart: periodStart
+      });
+
+      if (!budgetExists) {
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        return res.status(400).json({
+          message: `Cannot record expense: No budget has been allocated for this category in ${monthNames[month - 1]} ${year}.`,
+          category: category,
+          period: `${monthNames[month - 1]} ${year}`,
+          suggestion: 'Please create a budget for this category and period before recording expenses.'
+        });
+      }
+
+      // Budget exists - now check for overspending hard limit
+      // Calculate period end (last day of the month)
+      const periodEnd = new Date(year, month, 0, 23, 59, 59, 999);
+      
+      // Get total amount already spent in this category for the current period
+      const existingTransactions = await Transaction.find({
+        userId: req.user.id,
+        category: category,
+        type: 'expense',
+        date: { $gte: periodStart, $lte: periodEnd }
+      });
+
+      const totalSpent = existingTransactions.reduce((sum, trans) => sum + trans.amount, 0);
+      const newTotalSpent = totalSpent + amount;
+
+      // Check if new transaction would exceed the budget limit
+      if (newTotalSpent > budgetExists.limitAmount) {
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        return res.status(400).json({
+          message: `Transaction exceeds the allocated budget limit for this category.`,
+          budgetLimit: budgetExists.limitAmount,
+          currentSpending: totalSpent,
+          transactionAmount: amount,
+          newTotalSpending: newTotalSpent,
+          exceededBy: newTotalSpent - budgetExists.limitAmount,
+          period: `${monthNames[month - 1]} ${year}`,
+          suggestion: `You have already spent $${totalSpent.toFixed(2)} of your $${budgetExists.limitAmount.toFixed(2)} budget. This transaction would exceed your limit by $${(newTotalSpent - budgetExists.limitAmount).toFixed(2)}.`
+        });
+      }
     }
 
     // Create transaction with userId from authenticated user

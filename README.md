@@ -200,6 +200,22 @@ mongod
 2. Get your connection string
 3. Add it to your `.env` file
 
+### 6. Seed the Database (Optional but Recommended)
+
+Populate the database with default data:
+
+```bash
+# Seed quiz questions (22 questions across 4 categories)
+npm run seed
+
+# Seed expense/income categories (31 default categories)
+npm run seed:categories
+```
+
+This will insert:
+- **Quiz Questions**: 22 financial literacy questions covering Debt, Investing, Budgeting, and Saving
+- **Categories**: 31 pre-defined categories for transactions, budgets, assets, and debts
+
 ## ⚙️ Environment Variables
 
 Create a `.env` file in the root directory with the following variables:

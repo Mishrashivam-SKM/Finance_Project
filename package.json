@@ -10,7 +10,9 @@
     "test:auth": "jest tests/auth.test.js --runInBand --forceExit",
     "test:crud": "jest tests/crud.test.js --runInBand --forceExit",
     "test:reports": "jest tests/reports.test.js --runInBand --forceExit",
-    "test:admin": "jest tests/admin.test.js --runInBand --forceExit"
+    "test:admin": "jest tests/admin.test.js --runInBand --forceExit",
+    "seed": "node seed.js",
+    "seed:categories": "node seed-categories.js"
   },
   "keywords": [],
   "author": "",

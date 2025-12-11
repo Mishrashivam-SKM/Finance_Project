@@ -26,6 +26,11 @@ const quizQuestionSchema = new mongoose.Schema({
       message: 'Correct answer index must be a valid option index'
     }
   },
+  explanation: {
+    type: String,
+    required: true,
+    trim: true
+  },
   category: {
     type: String,
     enum: ['Debt', 'Investing', 'Budgeting', 'Saving', 'Tax Planning', 'Retirement', 'General'],
